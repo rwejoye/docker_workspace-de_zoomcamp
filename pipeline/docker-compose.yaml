@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: root
       POSTGRES_DB: ny_taxi
     volumes:
-      - ny_taxi_postgres_data:/var/lib/postgresql
+      - ny_taxi_postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -21,7 +21,22 @@ services:
       - pgadmin_data:/var/lib/pgadmin
     ports:
       - "8085:80"
+    depends_on:
+      - postgres
 
+  taxi_ingest:
+    image: taxi_ingest:v001
+    container_name: taxi_ingest_cont
+    depends_on:
+      - postgres
+    command: 
+      --pg-user=root
+      --pg-pass=root
+      --pg-host=postgres
+      --pg-port=5432
+      --pg-db=ny_taxi
+      --year=2021
+      --target-table=yellow_taxi_trips_2021__1
 
 volumes:
   ny_taxi_postgres_data:
