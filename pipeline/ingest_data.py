@@ -41,15 +41,17 @@ parse_dates = [
 @click.option("--pg-port", type=int, default=5432, show_default=True, help="Postgres port")
 @click.option("--pg-db", default="ny_taxi", show_default=True, help="Postgres database name")
 @click.option("--target-table", default="yellow_taxi_data", show_default=True, help="Target table name")
+@click.option("--target-table-2", default="zones_data", show_default=True, help="Target table name for zones data")
 @click.option("--chunksize", type=int, default=100000, show_default=True, help="Number of rows per chunk")
-def run(year, month, pg_user, pg_pass, pg_host, pg_port, pg_db, target_table, chunksize):
+def run(year, month, pg_user, pg_pass, pg_host, pg_port, pg_db, target_table, target_table_2, chunksize):
     PREFIX = "https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow"
-    url = f"{PREFIX}/yellow_tripdata_{year}-{month:02d}.csv.gz"
+    url_trips = f"{PREFIX}/yellow_tripdata_{year}-{month:02d}.csv.gz"
+    url_zones = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
     engine = create_engine(
         f'postgresql+psycopg://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_db}')
 
     df_iter = pd.read_csv(
-        url,
+        url_trips,
         dtype=dtype,
         parse_dates=parse_dates,
         iterator=True,
@@ -71,6 +73,13 @@ def run(year, month, pg_user, pg_pass, pg_host, pg_port, pg_db, target_table, ch
             con=engine,
             if_exists='append'
         )
+    #let's go ahead and add the zones data as well
+    df_zones = pd.read_csv(url_zones)
+    df_zones.to_sql(
+        name=target_table_2,
+        con=engine,
+        if_exists='replace'
+    )
 
 
 if __name__ == '__main__':
